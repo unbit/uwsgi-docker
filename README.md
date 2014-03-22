@@ -17,7 +17,7 @@ Should i use it ?
 
 As always, it depends. If you already have an infrastructure based on uWSGI (and its namespace features), introducing support for Docker images will be very useful for your developers, as they can simplify their deployment (all became a matter of committing and pushing new images) and get access to hundreds of ready-to-go application stacks.
 
-On the contrary, if you already have a Docker-based infrastructure, probably you'd better to continue using uWSGI as the application server
+On the contrary, if you already have a Docker-based infrastructure, probably you'd better to continue using uWSGI only as the application server
 
 
 How it works

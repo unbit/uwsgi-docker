@@ -45,3 +45,9 @@ Under the hood the following steps happen:
 - the instance call pivot_root() for setting the filesystem graph as the new rootfs
 - additional filesystems (/proc, /sys/, /dev/pts...) are mounted accordingly (this is configurable)
 - the instance continues its normal startup procedure
+
+Combining with the Emperor
+==========================
+
+Graceful reloads
+================

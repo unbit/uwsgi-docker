@@ -49,7 +49,7 @@ Under the hood the following steps happen:
 Unsharing more
 ==============
 
-A good approach is adding more namespaces (in additio nthe the mount one) to increase isolation
+A good approach is adding more namespaces (in addition to the the mount one) to increase isolation
 
 Good candidates are ```ipc``` and ```uts```
 

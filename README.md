@@ -88,6 +88,20 @@ gid = www-data
 stats = :5000
 ```
 
+And now we can finally run the Emperor:
+
+```ini
+[uwsgi]
+plugin = path_to/docker_plugin.so
+emperor = dir:///etc/uwsgi
+; once the plugin is loaded, docker support is optional
+; this option disallow running vassals without docker
+emperor-docker-required = true
+; use /usr/bin/uwsgi as the container entry point (the path coudl be different from the Emperor one, so we force it)
+emperor-wrapper = /usr/bin/uwsgi
+
+```
+
 How it works
 ============
 

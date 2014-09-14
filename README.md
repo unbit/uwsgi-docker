@@ -87,3 +87,37 @@ gid = www-data
 ; docker will protect it
 stats = :5000
 ```
+
+How it works
+============
+
+Attributes
+==========
+
+docker-image
+
+docker-port
+
+docker-workdir
+
+docker-mount
+
+docker-disable-network
+
+docker-network-mode
+
+docker-hostname
+
+docker-proxy
+
+docker-env
+
+docker-uid
+
+docker-memory
+
+docker-swap
+
+docker-cidfile
+
+docker-dns

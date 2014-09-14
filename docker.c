@@ -19,7 +19,7 @@ static struct uwsgi_option docker_options[] = {
 	{"emperor-docker", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor, 0},
 	{"docker-emperor-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
 	{"emperor-docker-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
-	{"docker-debug", no_argument, 0, "enable debug mode", uwsgi_opt_true, &udocker.emperor, 0},
+	{"docker-debug", no_argument, 0, "enable debug mode", uwsgi_opt_true, &udocker.debug, 0},
 	UWSGI_END_OF_OPTIONS
 };
 
@@ -65,11 +65,11 @@ static json_t *docker_json(char *method, char *url, json_t *json, long *http_sta
 	curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, docker_response);
 	curl_easy_setopt(curl, CURLOPT_WRITEDATA, ub);
 	CURLcode res = curl_easy_perform(curl);
-	free(full_url);
 	if (json_body) free(json_body);
 
 	if (res != CURLE_OK) {
-		uwsgi_log("[docket] error sending request %s: %s\n", full_url, curl_easy_strerror(res));
+		uwsgi_log("[docker] error sending request %s: %s\n", full_url, curl_easy_strerror(res));
+		free(full_url);
 		curl_slist_free_all(headers);
 		curl_easy_cleanup(curl);
 		goto error;
@@ -80,8 +80,10 @@ static json_t *docker_json(char *method, char *url, json_t *json, long *http_sta
 	curl_easy_cleanup(curl);
 
 	if (udocker.debug) {
-		uwsgi_log("[docker-debug] %d = %.*s\n", *http_status, ub->pos, ub->buf);
+		uwsgi_log("[docker-debug] HTTP request to %s -> %d\n%.*s\n", full_url, *http_status, ub->pos, ub->buf);
 	}
+
+	free(full_url);
 
 	json_error_t error;
 	response = json_loadb(ub->buf, ub->pos, 0, &error);
@@ -231,6 +233,64 @@ end:
 	// never here
 }
 
+static int docker_add_port(struct uwsgi_instance *ui, char *value, void *data) {
+	int ret = -1;
+	json_t *ports = (json_t *) data;
+	// how many colons ?
+	size_t i,n = 0;
+	char **items = uwsgi_split_quoted(value, strlen(value), ":", &n);
+	if (n < 2) goto end;
+	json_t *port_map_list = json_array();
+	json_t *port_map = json_object();	
+	// hostport:dockerport ?
+	char *docker_port = NULL;
+	if (n == 2) {
+		docker_port = items[1];
+		json_object_set(port_map, "HostPort", json_string(items[0]));
+	}
+	// hostip:hostport:dockerport
+	else {
+		docker_port = items[2];
+		json_object_set(port_map, "HostIp", json_string(items[0]));
+		json_object_set(port_map, "HostPort", json_string(items[1]));
+	}
+	json_array_append(port_map_list, port_map);
+	json_object_set(ports, docker_port, port_map_list);
+	ret = 0;
+end:
+	for(i=0;i<n;i++) {
+		free(items[i]);
+	}
+	free(items);
+	return ret;
+}
+
+static int docker_expose_port(struct uwsgi_instance *ui, char *value, void *data) {
+        int ret = -1;
+        json_t *ports = (json_t *) data;
+        // how many colons ?
+        size_t i,n = 0;
+        char **items = uwsgi_split_quoted(value, strlen(value), ":", &n);
+        if (n < 2) goto end;
+        // hostport:dockerport ?
+        char *docker_port = NULL;
+        if (n == 2) {
+                docker_port = items[1];
+        }
+        // hostip:hostport:dockerport
+        else {
+                docker_port = items[2];
+        }
+        json_object_set(ports, docker_port, json_object());
+        ret = 0;
+end:
+        for(i=0;i<n;i++) {
+                free(items[i]);
+        }
+        free(items);
+        return ret;
+}
+
 // POST /containers/create HTTP/1.1
 static void docker_run(struct uwsgi_instance *ui, char **argv) {
 
@@ -263,10 +323,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	json_t *root = json_object();
 	if (!root) exit(1);
 
-	json_t *image = json_string(image_attr);
-	if (!image) exit(1);
-
-	if (json_object_set(root, "Image", image)) exit(1);
+	if (json_object_set(root, "Image", json_string(image_attr))) exit(1);
 
 	if (json_object_set(root, "AttachStdin", json_true())) exit(1);
 	if (json_object_set(root, "OpenStdin", json_true())) exit(1);
@@ -274,12 +331,18 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	if (json_object_set(root, "AttachStdout", json_true())) exit(1);
 	if (json_object_set(root, "AttachStderr", json_true())) exit(1);
 
-
 	json_t *env = json_array();
 	char *env_proxy = uwsgi_concat2("UWSGI_EMPEROR_PROXY=", proxy_attr);
 	json_array_append(env, json_string(env_proxy));
 	free(env_proxy);
 	if (json_object_set(root, "Env", env)) exit(1);
+
+	json_t *ports = json_object();
+        if (vassal_attr_get_multi(ui, "docker-port", docker_expose_port, ports)) {
+                uwsgi_log("[docker] unable to build port mapping for vassal %s\n", ui->name);
+                exit(1);
+        }
+        if (json_object_set(root, "ExposedPorts", ports)) exit(1);
 
 	json_t *cmd = json_array();
 	if (!cmd) exit(1);
@@ -299,6 +362,9 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 		long http_status = 0;
 
 		char *url = uwsgi_concat2("/containers/create?name=", ui->name);
+		if (udocker.debug) {
+			uwsgi_log("[docker-debug] POST %s\n%s\n", url, json_dumps(root, 0));
+		}
 		json_t *response = docker_json("POST", url, root, &http_status);
 		free(url);
 
@@ -353,8 +419,18 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 
 	json_object_set(root, "Binds", binds);
 
+	ports = json_object();
+        if (vassal_attr_get_multi(ui, "docker-port", docker_add_port, ports)) {
+                uwsgi_log("[docker] unable to build port mapping for vassal %s\n", ui->name);
+                exit(1);
+        }
+        if (json_object_set(root, "PortBindings", ports)) exit(1);
+
 	long http_status = 0;
 	char *url = uwsgi_concat3("/containers/", container_id, "/start");
+	if (udocker.debug) {
+		uwsgi_log("[docker-debug] POST %s\n%s\n", url, json_dumps(root, 0));
+	}
 	json_t *response = docker_json("POST", url, root, &http_status);
 	free(url);
 	if (http_status != 204) {
@@ -390,6 +466,7 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi.emperor_force_config_pipe = 1;
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-proxy");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-image");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-port");
 	}
 }
 

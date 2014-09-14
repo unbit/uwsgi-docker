@@ -66,6 +66,7 @@ docker rm psgi_image
 The psgi001 image is ready to be used, let's prepare a vassal for our psgi app
 
 ```ini
+; the [emperor] section is parsed ONLY by the Emperor
 [emperor]
 docker-image = psgi001
 

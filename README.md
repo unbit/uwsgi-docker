@@ -68,12 +68,22 @@ The psgi001 image is ready to be used, let's prepare a vassal for our psgi app
 ```ini
 ; the [emperor] section is parsed ONLY by the Emperor
 [emperor]
+; use psgi001 as the docker image
 docker-image = psgi001
+; map host port 9001 to container port 3031/tcp
+docker-port = 9001:3031
+; map host port 127.0.0.1:5001 to container port 5000/tcp
+docker-port = 127.0.0.1:9001:3031
 
 [uwsgi]
 psgi = /var/www/app.pl
 processes = 4
-socket = 127.0.0.1:3031
+; in bridged mode the class B network is allocated, so we can simply bind to the first address starting with 172
+; so we use the very handy .* trick
+socket = 172.*:3031
 uid = www-data
 gid = www-data
+; we are free to bind teh stats server to all of teh address
+; docker will protect it
+stats = :5000
 ```

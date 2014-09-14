@@ -83,7 +83,7 @@ processes = 4
 socket = 172.*:3031
 uid = www-data
 gid = www-data
-; we are free to bind teh stats server to all of teh address
+; we are free to bind the stats server to all of the address
 ; docker will protect it
 stats = :5000
 ```

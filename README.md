@@ -73,7 +73,7 @@ docker-image = psgi001
 ; map host port 9001 to container port 3031/tcp
 docker-port = 9001:3031
 ; map host port 127.0.0.1:5001 to container port 5000/tcp
-docker-port = 127.0.0.1:9001:5000
+docker-port = 127.0.0.1:5001:5000
 
 [uwsgi]
 psgi = /var/www/app.pl

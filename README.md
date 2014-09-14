@@ -34,13 +34,13 @@ Ensure the docker daemon is running (eventually run it from the terminal as root
 
 Prepare your first image (this will be for a perl/psgi app based on ubuntu):
 
-```
+```sh
 docker run -t -i --name=psgi_image ubuntu /bin/bash
 ```
 
 you are now in a new container (named 'psgi_image') and you can start installing the required packages, a bunch of cpan modules, uwsgi and a simple hello world psgi app
 
-```
+```sh
 apt-get update
 apt-get install python libperl-dev build-essential libpcre3-dev cpanminus
 apt-get clean
@@ -52,6 +52,27 @@ echo "my \$app = sub { return [200, {}, ['Hello World from Docker']];}" > /var/w
 
 now, let's commit the image as 'psgi001' (run the following command in another terminal)
 
-```
+```sh
 docker commit psgi_image psgi001
+```
+
+and now we are free to destroy the container
+
+```sh
+docker stop psgi_image
+docker rm psgi_image
+```
+
+The psgi001 image is ready to be used, let's prepare a vassal for our psgi app
+
+```ini
+[emperor]
+docker-image = psgi001
+
+[uwsgi]
+psgi = /var/www/app.pl
+processes = 4
+socket = 127.0.0.1:3031
+uid = www-data
+gid = www-data
 ```

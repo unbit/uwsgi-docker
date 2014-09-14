@@ -105,6 +105,14 @@ emperor-wrapper = /usr/bin/uwsgi
 How it works
 ============
 
+The plugin communicates with the docker daemon unix socket (/var/run/docker.sock).
+
+On vassal start the plugin ask the docker daemon to create a new container with specific attributes and with same name of the vassal (a foobar.ini vassal will generate a foobar.ini docker container). This container automatically get access to a unix socket (the proxy emperor socket) from which it will gets the emperor file descriptors (control pipe, configuration pipe and eventually the on-demand socket). Once the emperor proxy has passed the file descriptor it is completely destroyed (as from now on the Emperor has full control over the dockerized instance).
+
+For security and robustness the docker transaction is managed by a process for each vassal. This process is named [uwsgi-docker-bridge] and it requires very few memory. Once this process has completed the spawn of the instance it attaches itself to the pseudoterminal of the docker instance (so you will transparently get instance logs if not redirected). Once the pseudoterminal closes, the vassal is destroyed too.
+
+
+
 Attributes
 ==========
 

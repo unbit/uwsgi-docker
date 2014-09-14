@@ -111,6 +111,9 @@ On vassal start the plugin ask the docker daemon to create a new container with 
 
 For security and robustness the docker transaction is managed by a process for each vassal. This process is named [uwsgi-docker-bridge] and it requires very few memory. Once this process has completed the spawn of the instance it attaches itself to the pseudoterminal of the docker instance (so you will transparently get instance logs if not redirected). Once the pseudoterminal closes, the vassal is destroyed too.
 
+If during the startup phase of the vassal, a docker instance named as the vassal is found, it will be automatically destroyed.
+
+When the emperor dies, all of the related containers are destroyed too.
 
 
 Attributes

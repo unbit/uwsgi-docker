@@ -187,7 +187,7 @@ static int docker_destroy(char *name, char *container_id) {
 
 
 // here we use a raw connection
-static void docker_attach(struct uwsgi_instance *ui, int proxy_fd, char *container_id) {
+static void docker_attach(struct uwsgi_instance *ui, int proxy_fd, char *proxy_path, char *container_id) {
 
 	uwsgi_log("[docker] waiting for proxy connection on container %s (%s)\n", container_id, ui->name);
 	// wait for connection
@@ -197,6 +197,7 @@ static void docker_attach(struct uwsgi_instance *ui, int proxy_fd, char *contain
 	close(ui->pipe[1]);
 	if (ui->pipe_config[1] > -1)
 		close(ui->pipe_config[1]);
+	unlink(proxy_path);
 
 	int fd = uwsgi_connect(DOCKER_SOCKET, uwsgi.socket_timeout, 0);
 	if (fd < 0) goto end;
@@ -299,8 +300,8 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	char *proxy_attr = vassal_attr_get(ui, "docker-proxy");
 	char *image_attr = vassal_attr_get(ui, "docker-image");
 
-	if (!proxy_attr || !image_attr) {
-		uwsgi_log("[docker] no image or proxy attributes specified for vassal %s\n", ui->name);
+	if (!image_attr) {
+		uwsgi_log("[docker] no image attribute specified for vassal %s\n", ui->name);
 		if (udocker.emperor_required) {
 			exit(1);
 		}
@@ -311,10 +312,39 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	uwsgi_set_processname(processname);
 	free(processname);
 
+	char *proxy_attr_emperor = NULL;
+	char *proxy_attr_docker = NULL;
+	if (proxy_attr) {
+		char *colon = strchr(proxy_attr, ':');
+		if (colon) {
+			*colon = 0;
+			// we leak this, sorry :)
+			proxy_attr_emperor = uwsgi_str(proxy_attr);
+			*colon = ':';
+			proxy_attr_docker = colon+1;
+		}
+		else {
+			proxy_attr_emperor = proxy_attr;
+			proxy_attr_docker = proxy_attr;
+		}
+	}
+	else {
+		// if docker-proxy is not specified we place the socket
+		// in the vassals dir
+		char *socket_path = uwsgi_expand_path(ui->name, strlen(ui->name), NULL);
+		if (!socket_path) {
+			uwsgi_log("[docker] unable to build proxy socket path\n");
+			exit(1);
+		}
+		proxy_attr_emperor = uwsgi_concat2(socket_path, ".sock");
+		free(socket_path);
+		proxy_attr_docker = uwsgi_concat3("/", ui->name, ".sock");
+	}
+
 	// first of all we wait for proxy connection
-        int proxy_fd = bind_to_unix(proxy_attr, uwsgi.listen_queue, 0, 0);
+        int proxy_fd = bind_to_unix(proxy_attr_emperor, uwsgi.listen_queue, 0, 0);
         if (proxy_fd < 0) exit(1);
-	if (chmod(proxy_attr, S_IRUSR|S_IWUSR)) {
+	if (chmod(proxy_attr_emperor, S_IRUSR|S_IWUSR)) {
         	uwsgi_error("[emperor-proxy] chmod()");
                 exit(1);
         }
@@ -332,7 +362,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	if (json_object_set(root, "AttachStderr", json_true())) exit(1);
 
 	json_t *env = json_array();
-	char *env_proxy = uwsgi_concat2("UWSGI_EMPEROR_PROXY=", proxy_attr);
+	char *env_proxy = uwsgi_concat2("UWSGI_EMPEROR_PROXY=", proxy_attr_docker);
 	json_array_append(env, json_string(env_proxy));
 	free(env_proxy);
 	if (json_object_set(root, "Env", env)) exit(1);
@@ -413,7 +443,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	// and now we sart the docker instance
 	root = json_object();
 	json_t *binds = json_array();
-	char *proxy_bind = uwsgi_concat3(proxy_attr, ":", proxy_attr);
+	char *proxy_bind = uwsgi_concat3(proxy_attr_emperor, ":", proxy_attr_docker);
 	json_array_append(binds, json_string(proxy_bind));
 	free(proxy_bind);
 
@@ -454,7 +484,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	json_decref(root);
 
 	// now attach to stdout and stderr (read: pty)
-	docker_attach(ui, proxy_fd, container_id);
+	docker_attach(ui, proxy_fd, proxy_attr_emperor, container_id);
 	// never here ?
 	exit(0);
 }

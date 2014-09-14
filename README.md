@@ -83,7 +83,66 @@ processes = 4
 socket = 172.*:3031
 uid = www-data
 gid = www-data
-; we are free to bind teh stats server to all of teh address
+; we are free to bind the stats server to all of the address
 ; docker will protect it
 stats = :5000
 ```
+
+And now we can finally run the Emperor:
+
+```ini
+[uwsgi]
+plugin = path_to/docker_plugin.so
+emperor = dir:///etc/uwsgi
+; once the plugin is loaded, docker support is optional
+; this option disallow running vassals without docker
+emperor-docker-required = true
+; use /usr/bin/uwsgi as the container entry point (the path coudl be different from the Emperor one, so we force it)
+emperor-wrapper = /usr/bin/uwsgi
+
+```
+
+How it works
+============
+
+The plugin communicates with the docker daemon unix socket (/var/run/docker.sock).
+
+On vassal start the plugin ask the docker daemon to create a new container with specific attributes and with same name of the vassal (a foobar.ini vassal will generate a foobar.ini docker container). This container automatically get access to a unix socket (the proxy emperor socket) from which it will gets the emperor file descriptors (control pipe, configuration pipe and eventually the on-demand socket). Once the emperor proxy has passed the file descriptor it is completely destroyed (as from now on the Emperor has full control over the dockerized instance).
+
+For security and robustness the docker transaction is managed by a process for each vassal. This process is named [uwsgi-docker-bridge] and it requires very few memory. Once this process has completed the spawn of the instance it attaches itself to the pseudoterminal of the docker instance (so you will transparently get instance logs if not redirected). Once the pseudoterminal closes, the vassal is destroyed too.
+
+If during the startup phase of the vassal, a docker instance named as the vassal is found, it will be automatically destroyed.
+
+When the emperor dies, all of the related containers are destroyed too.
+
+
+Attributes
+==========
+
+docker-image
+
+docker-port
+
+docker-workdir
+
+docker-mount
+
+docker-disable-network
+
+docker-network-mode
+
+docker-hostname
+
+docker-proxy
+
+docker-env
+
+docker-uid
+
+docker-memory
+
+docker-swap
+
+docker-cidfile
+
+docker-dns

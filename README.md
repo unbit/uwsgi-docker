@@ -163,35 +163,35 @@ The Emperor Proxy
 Attributes
 ==========
 
-'docker-image' set the image to use for the container
+`docker-image` set the image to use for the container
 
-'docker-socket' bind a socket and pass it to the docker instance
+`docker-socket` bind a socket and pass it to the docker instance
 
-'docker-port' forward a port, syntax hostip:hostport:dockerport or hostport:dockerport
+`docker-port` forward a port, syntax hostip:hostport:dockerport or hostport:dockerport
 
-'docker-workdir' set working directory
+`docker-workdir` set working directory
 
-'docker-mount' bind mount from host to docker, syntax /host:/docker
+`docker-mount` bind mount from host to docker, syntax /host:/docker
 
-'docker-disable-network' disable networking in the docker instance
+`docker-disable-network` disable networking in the docker instance
 
-'docker-network-mode' set network mode (bridge, host, none, container:id)
+`docker-network-mode` set network mode (bridge, host, none, container:id)
 
-'docker-hostname' set docker instance hostname
+`docker-hostname` set docker instance hostname
 
-'docker-proxy' set emperor proxy path, syntax hostpath:dockerpath
+`docker-proxy` set emperor proxy path, syntax hostpath:dockerpath
 
-'docker-env' set environment variable in docker instance
+`docker-env` set environment variable in docker instance
 
-'docker-uid' run uwsgi in docker as the specified user (otherwise it will start as root and you will need to specify uid and gid in the vassal)
+`docker-uid` run uwsgi in docker as the specified user (otherwise it will start as root and you will need to specify uid and gid in the vassal)
 
-'docker-memory' set the max amount of memory for the docker instance
+`docker-memory` set the max amount of memory for the docker instance
 
 `docker-swap` set the max amount of swap memory for the docker instance
 
-'docker-cidfile' store the cid (container id) file to the specified path
+`docker-cidfile` store the cid (container id) file to the specified path
 
-'docker-dns' add a dns server to the docker instance
+`docker-dns` add a dns server to the docker instance
 
-'docker-daemon-socket' change the default docker daemon socker (default /var/run/docker.sock)
+`docker-daemon-socket` change the default docker daemon socker (default /var/run/docker.sock)
 

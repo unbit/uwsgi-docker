@@ -190,9 +190,9 @@ Attributes
 
 `docker-user` run uwsgi in docker as the specified user (otherwise it will start as root and you will need to specify uid and gid in the vassal)
 
-`docker-memory` set the max amount of memory for the docker instance
+`docker-memory` set the max amount of memory (in bytes) for the docker instance
 
-`docker-swap` set the max amount of swap memory for the docker instance
+`docker-swap` set the max amount of swap memory (in bytes) for the docker instance
 
 `docker-cidfile` store the cid (container id) file to the specified path
 

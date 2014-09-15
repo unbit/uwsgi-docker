@@ -180,8 +180,6 @@ Attributes
 
 `docker-mount` bind mount from host to docker, syntax /host:/docker
 
-`docker-disable-network` disable networking in the docker instance
-
 `docker-network-mode` set network mode (bridge, host, none, container:id)
 
 `docker-hostname` set docker instance hostname

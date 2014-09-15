@@ -183,7 +183,7 @@ Attributes
 
 `docker-env` set environment variable in docker instance
 
-`docker-uid` run uwsgi in docker as the specified user (otherwise it will start as root and you will need to specify uid and gid in the vassal)
+`docker-user` run uwsgi in docker as the specified user (otherwise it will start as root and you will need to specify uid and gid in the vassal)
 
 `docker-memory` set the max amount of memory for the docker instance
 

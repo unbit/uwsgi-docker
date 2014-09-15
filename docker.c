@@ -20,6 +20,7 @@ static struct uwsgi_option docker_options[] = {
 	{"docker-emperor-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
 	{"emperor-docker-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
 	{"docker-debug", no_argument, 0, "enable debug mode", uwsgi_opt_true, &udocker.debug, 0},
+	{"docker-daemon-socket", no_argument, 0, "set the docker daemon socket path (default: " DOCKER_SOCKET ")", uwsgi_opt_true, &udocker.debug, 0},
 	UWSGI_END_OF_OPTIONS
 };
 
@@ -31,7 +32,7 @@ static curl_socket_t docker_unix_socket(void *foobar, curlsocktype cs_type, stru
 
 	memset(un_addr, 0, c_addr->addrlen);
 	un_addr->sun_family = AF_UNIX;
-	strncpy(un_addr->sun_path, DOCKER_SOCKET, sizeof(un_addr->sun_path));
+	strncpy(un_addr->sun_path, udocker.socket, sizeof(un_addr->sun_path));
 	c_addr->protocol = 0; 
 	return socket(c_addr->family, c_addr->socktype, c_addr->protocol); 
 }
@@ -201,7 +202,7 @@ static void docker_attach(struct uwsgi_instance *ui, int proxy_fd, char *proxy_p
 		close(socket_fd);
 	unlink(proxy_path);
 
-	int fd = uwsgi_connect(DOCKER_SOCKET, uwsgi.socket_timeout, 0);
+	int fd = uwsgi_connect(udocker.socket, uwsgi.socket_timeout, 0);
 	if (fd < 0) goto end;
 
 	// send a raw request, we do not need curl this time
@@ -583,6 +584,9 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-env");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-user");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-cidfile");
+	}
+	if (!udocker.socket) {
+		udocker.socket = DOCKER_SOCKET;
 	}
 }
 

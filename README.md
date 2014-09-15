@@ -187,7 +187,7 @@ Attributes
 
 'docker-memory' set the max amount of memory for the docker instance
 
-'docker-swap' set the max amount of swap memory for the docker instance
+`docker-swap` set the max amount of swap memory for the docker instance
 
 'docker-cidfile' store the cid (container id) file to the specified path
 

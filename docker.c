@@ -403,7 +403,6 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
                 if (json_object_set(root, "User", json_string(docker_user))) exit(1);
         }
 
-
 	// Env
 	json_t *env = json_array();
 	if (vassal_attr_get_multi(ui, "docker-env", docker_add_item_to_array, env)) {
@@ -533,6 +532,11 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
         }
         if (json_object_set(root, "PortBindings", ports)) exit(1);
 
+	char *docker_network_mode = vassal_attr_get(ui, "docker-network-mode");
+	if (docker_network_mode) {
+                if (json_object_set(root, "NetworkMode", json_string(docker_network_mode))) exit(1);
+        }
+
 	long http_status = 0;
 	char *url = uwsgi_concat3("/containers/", container_id, "/start");
 	if (udocker.debug) {
@@ -584,6 +588,7 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-env");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-user");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-cidfile");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-network-mode");
 	}
 	if (!udocker.socket) {
 		udocker.socket = DOCKER_SOCKET;

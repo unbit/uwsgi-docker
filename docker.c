@@ -20,7 +20,7 @@ static struct uwsgi_option docker_options[] = {
 	{"docker-emperor-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
 	{"emperor-docker-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
 	{"docker-debug", no_argument, 0, "enable debug mode", uwsgi_opt_true, &udocker.debug, 0},
-	{"docker-daemon-socket", no_argument, 0, "set the docker daemon socket path (default: " DOCKER_SOCKET ")", uwsgi_opt_true, &udocker.debug, 0},
+	{"docker-daemon-socket", required_argument, 0, "set the docker daemon socket path (default: " DOCKER_SOCKET ")", uwsgi_opt_set_str, &udocker.socket, 0},
 	UWSGI_END_OF_OPTIONS
 };
 

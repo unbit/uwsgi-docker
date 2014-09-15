@@ -375,6 +375,27 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	if (json_object_set(root, "AttachStdout", json_true())) exit(1);
 	if (json_object_set(root, "AttachStderr", json_true())) exit(1);
 
+	char *docker_workdir = vassal_attr_get(ui, "docker-workdir");
+	if (docker_workdir) {
+		if (json_object_set(root, "WorkingDir", json_string(docker_workdir))) exit(1);
+	}
+
+	char *docker_hostname = vassal_attr_get(ui, "docker-hostname");
+	if (docker_hostname) {
+		if (json_object_set(root, "Hostname", json_string(docker_hostname))) exit(1);
+	}
+
+	char *docker_memory = vassal_attr_get(ui, "docker-memory");
+	if (docker_memory) {
+		if (json_object_set(root, "Memory", json_integer(strtoul(docker_memory, NULL, 10)))) exit(1);
+	}
+
+	char *docker_swap = vassal_attr_get(ui, "docker-swap");
+	if (docker_swap) {
+		if (json_object_set(root, "MemorySwap", json_integer(strtoul(docker_swap, NULL, 10)))) exit(1);
+	}
+
+
 	json_t *env = json_array();
 	char *env_proxy = uwsgi_concat2("UWSGI_EMPEROR_PROXY=", proxy_attr_docker);
 	json_array_append(env, json_string(env_proxy));
@@ -512,6 +533,10 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-image");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-port");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-socket");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-workdir");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-hostname");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-memory");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-swap");
 	}
 }
 

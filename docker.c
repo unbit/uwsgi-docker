@@ -485,6 +485,20 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 		break;
 	}
 
+	char *docker_cidfile = vassal_attr_get(ui, "docker-cidfile");
+	if (docker_cidfile) {
+		FILE *cidfile = fopen(docker_cidfile, "w");
+		if (!cidfile) {
+			uwsgi_error_open(docker_cidfile);
+			exit(1);
+		}
+		if (fprintf(cidfile, "%s\n", container_id) < 2) {
+			uwsgi_error("docker_run()/fprintf()");
+			exit(1);
+		}
+		fclose(cidfile);
+	}
+
 	// free json object
 	json_decref(root);
 	// and now we sart the docker instance
@@ -568,6 +582,7 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-dns");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-env");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-user");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-cidfile");
 	}
 }
 

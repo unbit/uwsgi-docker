@@ -179,8 +179,8 @@ static int docker_destroy(char *name, char *container_id) {
 		return -1;
 	}
 
-	if (garbage) json_decref(garbage);
 	uwsgi_log("[docker] container %s deleted\n", container_id);
+	if (garbage) json_decref(garbage);
 	return 0;
 }
 
@@ -234,6 +234,12 @@ end:
 	uwsgi_log("[docker] destroying container %s (%s) ...\n", container_id, ui->name);
 	docker_destroy(ui->name, container_id);
 	// never here
+}
+
+static int  docker_add_item_to_array(struct uwsgi_instance *ui, char *value, void *data) {
+	json_t *array = (json_t *) data;
+	json_array_append(array, json_string(value));
+	return 0;	
 }
 
 static int docker_add_port(struct uwsgi_instance *ui, char *value, void *data) {
@@ -356,12 +362,8 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	}
 
 	// first of all we wait for proxy connection
-        int proxy_fd = bind_to_unix(proxy_attr_emperor, uwsgi.listen_queue, 0, 0);
+        int proxy_fd = bind_to_unix(proxy_attr_emperor, uwsgi.listen_queue, uwsgi.chmod_socket, 0);
         if (proxy_fd < 0) exit(1);
-	if (chmod(proxy_attr_emperor, S_IRUSR|S_IWUSR)) {
-        	uwsgi_error("[emperor-proxy] chmod()");
-                exit(1);
-        }
 
 	// start connecting to the docker server in sync way
 	json_t *root = json_object();
@@ -395,8 +397,18 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 		if (json_object_set(root, "MemorySwap", json_integer(strtoul(docker_swap, NULL, 10)))) exit(1);
 	}
 
+	char *docker_user = vassal_attr_get(ui, "docker-user");
+        if (docker_user) {
+                if (json_object_set(root, "User", json_string(docker_user))) exit(1);
+        }
 
+
+	// Env
 	json_t *env = json_array();
+	if (vassal_attr_get_multi(ui, "docker-env", docker_add_item_to_array, env)) {
+                uwsgi_log("[docker] unable to build envs list for vassal %s\n", ui->name);
+                exit(1);
+        }	
 	char *env_proxy = uwsgi_concat2("UWSGI_EMPEROR_PROXY=", proxy_attr_docker);
 	json_array_append(env, json_string(env_proxy));
 	free(env_proxy);
@@ -477,13 +489,28 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	json_decref(root);
 	// and now we sart the docker instance
 	root = json_object();
+
+	// Volumes/Binds
 	json_t *binds = json_array();
+        if (vassal_attr_get_multi(ui, "docker-mount", docker_add_item_to_array, binds)) {
+                uwsgi_log("[docker] unable to build volumes mapping for vassal %s\n", ui->name);
+                exit(1);
+        }
 	char *proxy_bind = uwsgi_concat3(proxy_attr_emperor, ":", proxy_attr_docker);
 	json_array_append(binds, json_string(proxy_bind));
 	free(proxy_bind);
-
 	json_object_set(root, "Binds", binds);
 
+	// Dns
+	json_t *dns = json_array();
+	if (vassal_attr_get_multi(ui, "docker-dns", docker_add_item_to_array, dns)) {
+                uwsgi_log("[docker] unable to build dns list for vassal %s\n", ui->name);
+                exit(1);
+        }
+	json_object_set(root, "Dns", dns);
+
+
+	// PortBindings
 	ports = json_object();
         if (vassal_attr_get_multi(ui, "docker-port", docker_add_port, ports)) {
                 uwsgi_log("[docker] unable to build port mapping for vassal %s\n", ui->name);
@@ -537,6 +564,10 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-hostname");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-memory");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-swap");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-mount");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-dns");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-env");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-user");
 	}
 }
 

@@ -327,3 +327,5 @@ Known Issues
 The glob:// imperial monitor does not work (must be fixed in uWSGI itself)
 
 Only .ini files are supported (must be fixed in uWSGI itself)
+
+Currently configs are piped via the emperor proxy socket, but allowing the dockerized instance to access the original file should be permitted (now config piping is hardcoded)

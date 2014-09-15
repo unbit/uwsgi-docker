@@ -159,6 +159,13 @@ When the emperor dies, all of the related containers are destroyed too.
 The Emperor Proxy
 =================
 
+Integration with the forkpty router plugin
+==========================================
+
+The forkpty router is a plugin included in the official uWSGI sources. It allows you to attach a terminal session
+to a running uWSGI instance:
+
+http://uwsgi-docs.readthedocs.org/en/latest/ForkptyRouter.html
 
 Attributes
 ==========
@@ -173,8 +180,6 @@ Attributes
 
 `docker-mount` bind mount from host to docker, syntax /host:/docker
 
-`docker-disable-network` disable networking in the docker instance
-
 `docker-network-mode` set network mode (bridge, host, none, container:id)
 
 `docker-hostname` set docker instance hostname
@@ -185,13 +190,22 @@ Attributes
 
 `docker-user` run uwsgi in docker as the specified user (otherwise it will start as root and you will need to specify uid and gid in the vassal)
 
-`docker-memory` set the max amount of memory for the docker instance
+`docker-memory` set the max amount of memory (in bytes) for the docker instance
 
-`docker-swap` set the max amount of swap memory for the docker instance
+`docker-swap` set the max amount of swap memory (in bytes) for the docker instance
 
 `docker-cidfile` store the cid (container id) file to the specified path
 
 `docker-dns` add a dns server to the docker instance
 
-`docker-daemon-socket` change the default docker daemon socker (default /var/run/docker.sock)
+Options
+=======
+
+`--docker-emperor/--emperor-docker` enable the docker support in the Emperor
+
+`--docker-emperor-required/--emperor-docker-required` enable the docker support in the Emperor and requires each vassal to expose Docker options
+
+`--docker-debug` enable debug logging
+
+`--docker-daemon-socket` change the default docker daemon socker (default /var/run/docker.sock)
 

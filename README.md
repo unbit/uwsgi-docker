@@ -13,7 +13,9 @@ vassal's configuration to dockerize it.
 Requirements
 ============
 
-You need at least uWSGI 2.1 for the Emperor and uWSGI 2.0.6 for vassals
+You need at least uWSGI 2.1 for the Emperor and uWSGI 2.0.6 for vassals.
+
+For a better experience you should use uWSGI >= 2.1 even in vassals to get advanced features, like binding a socket in the host and passing it to the docker instance without worrying about redirecting ports or mapping additional filesystems.
 
 To build the plugin you need libcurl (and its development headers) and libjansson (and its development headers)
 
@@ -121,6 +123,8 @@ Attributes
 
 docker-image
 
+docker-socket
+
 docker-port
 
 docker-workdir
@@ -146,3 +150,6 @@ docker-swap
 docker-cidfile
 
 docker-dns
+
+docker-daemon-socket
+

@@ -47,7 +47,7 @@ apt-get clean
 cpanm Plack
 curl http://uwsgi.it/install | bash -s psgi /usr/bin/uwsgi
 mkdir /var/www
-echo "my \$app = sub { return [200, {}, ['Hello World from Docker']];}" > /var/www/app.pl
+echo "my \$app = sub { return [200, [], ['Hello World from Docker']];}" > /var/www/app.pl
 ```
 
 now, let's commit the image as 'psgi001' (run the following command in another terminal)

@@ -1,5 +1,3 @@
-*** WORK IN PROGRESS ***
-
 uwsgi-docker
 ============
 
@@ -159,6 +157,52 @@ When the emperor dies, all of the related containers are destroyed too.
 The Emperor Proxy
 =================
 
+As seen before the dockerized instance requires access to a special unix socket (the emperor proxy socket) that will pass al of the required file descriptors.
+
+By the default this socket is created in the same directory of the vassal file suffixing it with .sock.
+
+/etc/uwsgi/foobar.ini will generate /etc/uwsgi/foobar.ini.sock that will be mounted as /foobar.ini.sock
+
+You can override this behaviour using the the `docker-proxy` attribute:
+
+```ini
+; the [emperor] section is parsed ONLY by the Emperor
+[emperor]
+; use psgi001 as the docker image
+docker-image = psgi001
+; bind to address /var/run/example.com.socket
+docker-socket = /var/run/example.com.socket
+
+docker-proxy=/var/run/foobar.sock:/tmp/foosocket
+
+[uwsgi]
+psgi = /var/www/app.pl
+processes = 4
+uid = www-data
+gid = www-data
+```
+this will create a /var/run/foobar.sock unix socket in the host, exposed to the docker instance as /tmp/foosocket.
+
+Remember that the unix socket file is removed from the host soon after the docker instance has connected to it.
+
+An important thing YOU HAVE TO REMEMBER, is that the uwsgi process run by the instance must have write access to it, so if you are using the `docker-user` attribute (to start uwsgi as an unprivileged user instead of configuring it for dropping privileges) you have to tell the emperor to create sockets with a specific permission mode using the classic `chmod-socket` option
+
+```ini
+[uwsgi]
+plugin = path_to/docker_plugin.so
+emperor = dir:///etc/uwsgi
+; once the plugin is loaded, docker support is optional
+; this option disallow running vassals without docker
+emperor-docker-required = true
+; use /usr/bin/uwsgi as the container entry point (the path coudl be different from the Emperor one, so we force it)
+emperor-wrapper = /usr/bin/uwsgi
+
+chmod-socket = 666
+```
+
+Remember the socket is suddenly destroyed after the first connection.
+
+
 Integration with the forkpty router plugin
 ==========================================
 
@@ -166,6 +210,73 @@ The forkpty router is a plugin included in the official uWSGI sources. It allows
 to a running uWSGI instance:
 
 http://uwsgi-docs.readthedocs.org/en/latest/ForkptyRouter.html
+
+Best approach is exposing an host directory for the vassal in the docker container. You will be able to use this directory to create the unix socket of the forkpty router (another approach would be binding it on a inet socket and forwarding the port).
+
+```ini
+; the [emperor] section is parsed ONLY by the Emperor
+[emperor]
+; use psgi001 as the docker image
+docker-image = psgi001
+; bind to address /var/run/example.com.socket
+docker-socket = /var/run/example.com.socket
+
+; mount /pty/foo as /foo (ensure it is owned by www-data)
+docker-mount = /pty/foo:/pty
+
+[uwsgi]
+psgi = /var/www/app.pl
+processes = 4
+uid = www-data
+gid = www-data
+forkpty-router = /pty/socket
+```
+
+Now you can enter the container with:
+
+```sh
+uwsgi --pty-connect /pty/foo/socket
+```
+
+Remember to rebuild uWSGI with `pty` and `forkptyrouter` plugins embedded, a fast trick is using
+
+```sh
+UWSGI_EMBED_PLUGINS=pty,forkptyrouter make psgi
+```
+
+Technically the host instance requires only the `pty` one, while the dockerized one the `forkptyrouter` one.
+
+Eventually you can build them as external plugins and load dinamically:
+
+```sh
+uwsgi --build-plugin plugins/pty
+uwsgi --build-plugin plugins/forkptyrouter
+```
+
+By default the forkptyrouter runs /bin/sh. /bin/bash should be a better choice, just set it with `forkptyrouter-command` option.
+
+```ini
+; the [emperor] section is parsed ONLY by the Emperor
+[emperor]
+; use psgi001 as the docker image
+docker-image = psgi001
+; bind to address /var/run/example.com.socket
+docker-socket = /var/run/example.com.socket
+
+; mount /pty/foo as /foo (ensure it is owned by www-data)
+docker-mount = /pty/foo:/pty
+
+[uwsgi]
+plugin = path_to/forkptyrouter_plugin.so
+psgi = /var/www/app.pl
+processes = 4
+uid = www-data
+gid = www-data
+forkpty-router = /pty/socket
+forkptyrouter-command = /bin/bash
+```
+
+The forkptyrouter can be used instead of `nsenter` as it does not require special privileges (your client needs only write access to the specific unix socket)
 
 Attributes
 ==========

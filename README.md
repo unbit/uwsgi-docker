@@ -320,3 +320,10 @@ Options
 
 `--docker-daemon-socket` change the default docker daemon socker (default /var/run/docker.sock)
 
+
+Known Issues
+============
+
+The glob:// imperial monitor does not work (must be fixed in uWSGI itself)
+
+Only .ini files are supported (must be fixed in uWSGI itself)

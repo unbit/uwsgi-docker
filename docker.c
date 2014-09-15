@@ -187,16 +187,18 @@ static int docker_destroy(char *name, char *container_id) {
 
 
 // here we use a raw connection
-static void docker_attach(struct uwsgi_instance *ui, int proxy_fd, char *proxy_path, char *container_id) {
+static void docker_attach(struct uwsgi_instance *ui, int proxy_fd, char *proxy_path, char *container_id, int socket_fd) {
 
 	uwsgi_log("[docker] waiting for proxy connection on container %s (%s)\n", container_id, ui->name);
 	// wait for connection
-	uwsgi_master_manage_emperor_proxy(proxy_fd, ui->pipe[1], ui->pipe_config[1]);
+	uwsgi_master_manage_emperor_proxy(proxy_fd, ui->pipe[1], ui->pipe_config[1], socket_fd);
 	// we do not need those fds anymore
 	close(proxy_fd);
 	close(ui->pipe[1]);
 	if (ui->pipe_config[1] > -1)
 		close(ui->pipe_config[1]);
+	if (socket_fd > -1)
+		close(socket_fd);
 	unlink(proxy_path);
 
 	int fd = uwsgi_connect(DOCKER_SOCKET, uwsgi.socket_timeout, 0);
@@ -339,6 +341,18 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 		proxy_attr_emperor = uwsgi_concat2(socket_path, ".sock");
 		free(socket_path);
 		proxy_attr_docker = uwsgi_concat3("/", ui->name, ".sock");
+	}
+
+	int socket_fd = -1;
+	char *docker_socket = vassal_attr_get(ui, "docker-socket");
+	if (docker_socket) {
+		char *tcp_port = strchr(docker_socket, ':');
+                if (tcp_port) {
+                        socket_fd = bind_to_tcp(docker_socket, uwsgi.listen_queue, tcp_port);
+                }
+                else {
+                        socket_fd = bind_to_unix(docker_socket, uwsgi.listen_queue, uwsgi.chmod_socket, 0);
+                }
 	}
 
 	// first of all we wait for proxy connection
@@ -484,7 +498,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	json_decref(root);
 
 	// now attach to stdout and stderr (read: pty)
-	docker_attach(ui, proxy_fd, proxy_attr_emperor, container_id);
+	docker_attach(ui, proxy_fd, proxy_attr_emperor, container_id, socket_fd);
 	// never here ?
 	exit(0);
 }
@@ -497,6 +511,7 @@ static void docker_setup(int (*start)(void *), char **argv) {
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-proxy");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-image");
 		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-port");
+		uwsgi_string_new_list(&uwsgi.emperor_collect_attributes, "docker-socket");
 	}
 }
 

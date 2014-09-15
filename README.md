@@ -107,6 +107,41 @@ emperor-wrapper = /usr/bin/uwsgi
 Simplyfing socket management (requires uWSGI 2.1 in vassals)
 ============================================================
 
+One of the most common needs in app management is allowing connections from the frontend web proxy to the backend applications. As when under docker, applications run in a different network namespace, you need some way to enable communication between them.
+
+In the quickstart example we have seen how to forward ports from the host to the container. You can obtain the same with UNIX sockets mounting a host directory (where sockets are bound) to the container.
+
+Both are easy to accomplish, but are suboptimal:
+
+- when mounting a dir you will be very probably forced to show all of the bound sockets to the container (can be a privacy problem, expecially if you give sockets a meaningful name)
+
+- when forwarding ports, you need to choose which port mapping, this could be annoying and error prone.
+
+- forwarding ports has its overhead (albeit all managed in kernel space via iptables)
+
+The docker plugin exposes a 'docker-socket' attribute, allowing you to bind a socket in the host and automatically pass it to the docker instance. Our previous example can be simplified in this way:
+
+```ini
+; the [emperor] section is parsed ONLY by the Emperor
+[emperor]
+; use psgi001 as the docker image
+docker-image = psgi001
+; bind to address /var/run/example.com.socket
+docker-socket = /var/run/example.com.socket
+
+[uwsgi]
+psgi = /var/www/app.pl
+processes = 4
+uid = www-data
+gid = www-data
+```
+The host bind to /var/run/example.com.socket and passes it to the dockerized vassal automatically.
+
+Now you only need to configure your proxy (nginx, apache ...) to connect to /var/run/example.com.socket
+
+You can bind to both UNIX and INET sockets.
+
+Remember, you need uWSGI 2.1 in the vassal for supporting socket passing (albeit very probably uWSGI 2.0.8 will include this feature)
 
 How it works
 ============

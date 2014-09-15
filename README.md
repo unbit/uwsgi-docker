@@ -104,6 +104,10 @@ emperor-wrapper = /usr/bin/uwsgi
 
 ```
 
+Simplyfing socket management (requires uWSGI 2.1 in vassals)
+============================================================
+
+
 How it works
 ============
 
@@ -116,6 +120,9 @@ For security and robustness the docker transaction is managed by a process for e
 If during the startup phase of the vassal, a docker instance named as the vassal is found, it will be automatically destroyed.
 
 When the emperor dies, all of the related containers are destroyed too.
+
+The Emperor Proxy
+=================
 
 
 Attributes

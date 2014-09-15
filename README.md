@@ -281,7 +281,7 @@ The forkptyrouter can be used instead of `nsenter` as it does not require specia
 Attributes
 ==========
 
-`docker-image` set the image to use for the container
+`docker-image` set the image to use for the container (REQUIRED)
 
 `docker-socket` bind a socket and pass it to the docker instance
 

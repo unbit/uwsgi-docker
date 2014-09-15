@@ -159,6 +159,13 @@ When the emperor dies, all of the related containers are destroyed too.
 The Emperor Proxy
 =================
 
+Integration with the forkpty router plugin
+==========================================
+
+The forkpty router is a plugin included in the official uWSGI sources. It allows you to attach a terminal session
+to a running uWSGI instance:
+
+http://uwsgi-docs.readthedocs.org/en/latest/ForkptyRouter.html
 
 Attributes
 ==========

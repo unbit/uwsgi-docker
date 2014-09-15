@@ -193,5 +193,14 @@ Attributes
 
 `docker-dns` add a dns server to the docker instance
 
-`docker-daemon-socket` change the default docker daemon socker (default /var/run/docker.sock)
+Options
+=======
+
+`--docker-emperor/--emperor-docker` enable the docker support in the Emperor
+
+`--docker-emperor-required/--emperor-docker-required` enable the docker support in the Emperor and requires each vassal to expose Docker options
+
+`--docker-debug` enable debug logging
+
+`--docker-daemon-socket` change the default docker daemon socker (default /var/run/docker.sock)
 

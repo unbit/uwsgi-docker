@@ -307,6 +307,8 @@ Tips & Tricks
 
 Enabling the Emperor stats server (--emperor-stats) will allow you to inspect all of the vassals attributes (included docker ones)
 
+All of the imperial monitors supporting attributes (currently dir, glob and mongodb) will work with this plugin.
+
 Known Issues
 ============
 

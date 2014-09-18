@@ -302,6 +302,11 @@ Options
 * `--docker-debug` -- enable debug logging
 * `--docker-daemon-socket` -- change the default Docker daemon socket (default `/var/run/docker.sock`)
 
+Tips & Tricks
+=============
+
+Enabling the Emperor stats server (--emperor-stats) will allow you to inspect all of the vassals attributes (included docker ones)
+
 Known Issues
 ============
 

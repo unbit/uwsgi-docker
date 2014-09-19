@@ -3,6 +3,7 @@
 
 import unittest
 import socket
+from time import sleep
 
 try:
     import docker
@@ -75,10 +76,16 @@ class TestDockerPlugin(unittest.TestCase):
                 # Connect to the socket (mind the permission on the FS!)
                 sock.connect('/pty/foo/socket')
                 # Rcv from the socket
-                s, a = sock.recvfrom(100)  # 100 should be enough
+                prompt, a = sock.recvfrom(128)  # 128 should be enough
                 # Assert the address and that the shell prompt is not ''
                 self.assertEqual(a, '/pty/socket')
-                self.assertTrue(bool(s))
+                self.assertTrue(prompt)
+
+                # Try sending a command
+                sock.sendall("whoami\n")
+                sleep(0.1)
+                user, _ = sock.recvfrom(128)
+                self.assertEqual('whoami\r\nwww-data\r\n' + prompt, user)
 
         self.assertEqual(count, len(CONTAINERS_TRUTH))
 

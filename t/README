@@ -1,0 +1,26 @@
+REQUIREMENTS:
+============
+* uwsgi version >= 2.1.0 in your system path, for example with enabled plugins pty and forkptyrouter:
+	(sudo) UWSGI_BIN_NAME=/usr/bin/uwsgi UWSGI_EMBED_PLUGINS=pty,forkptyrouter make
+
+* docker image named psgi001 (configured similar to plugin-docs) but running an uwsgi version >= 2.1.0.
+TODO: could add a Dockerfile to automate the image building.
+
+* docker-py (install it with pip)
+
+* pty folder correctly configured on both the host and the container. Specifically:
+	/pty/foo folder writable by user on host
+	/pty folder writable by www-data on container
+
+You'd be able to run uwsgi both in non-privileged and root mode.
+Note: if you want to run in non-privileged mode, your user should be part of the docker group (in order to be able to manage docker without being root).
+
+If you need to change something in the .ini files, remember to change the related "truth" otherwise tests will fail.
+
+
+TESTING:
+===========
+Run uwsgi from the plugin directory:
+	uwsgi t/emperor.ini
+And then, in another shell, run the tests:
+	python t/tests.py

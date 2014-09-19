@@ -28,13 +28,13 @@ static struct uwsgi_option docker_options[] = {
 static curl_socket_t docker_unix_socket(void *foobar, curlsocktype cs_type, struct curl_sockaddr *c_addr) {
 	struct sockaddr_un* un_addr = (struct sockaddr_un*)&c_addr->addr;
 	c_addr->family = AF_UNIX;
-	c_addr->addrlen = sizeof(struct sockaddr_un); 
+	c_addr->addrlen = sizeof(struct sockaddr_un);
 
 	memset(un_addr, 0, c_addr->addrlen);
 	un_addr->sun_family = AF_UNIX;
 	strncpy(un_addr->sun_path, udocker.socket, sizeof(un_addr->sun_path));
-	c_addr->protocol = 0; 
-	return socket(c_addr->family, c_addr->socktype, c_addr->protocol); 
+	c_addr->protocol = 0;
+	return socket(c_addr->family, c_addr->socktype, c_addr->protocol);
 }
 
 // store a libcurl response in a uwsgi_buffer
@@ -240,7 +240,7 @@ end:
 static int  docker_add_item_to_array(struct uwsgi_instance *ui, char *value, void *data) {
 	json_t *array = (json_t *) data;
 	json_array_append(array, json_string(value));
-	return 0;	
+	return 0;
 }
 
 static int docker_add_port(struct uwsgi_instance *ui, char *value, void *data) {
@@ -251,7 +251,7 @@ static int docker_add_port(struct uwsgi_instance *ui, char *value, void *data) {
 	char **items = uwsgi_split_quoted(value, strlen(value), ":", &n);
 	if (n < 2) goto end;
 	json_t *port_map_list = json_array();
-	json_t *port_map = json_object();	
+	json_t *port_map = json_object();
 	// hostport:dockerport ?
 	char *docker_port = NULL;
 	if (n == 2) {
@@ -360,6 +360,10 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
                 else {
                         socket_fd = bind_to_unix(docker_socket, uwsgi.listen_queue, uwsgi.chmod_socket, 0);
                 }
+        if (socket_fd == -1) {
+        	uswgi_error("error binding docker-socket");
+        	exit(1);
+        }
 	}
 
 	// first of all we wait for proxy connection
@@ -408,7 +412,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 	if (vassal_attr_get_multi(ui, "docker-env", docker_add_item_to_array, env)) {
                 uwsgi_log("[docker] unable to build envs list for vassal %s\n", ui->name);
                 exit(1);
-        }	
+        }
 	char *env_proxy = uwsgi_concat2("UWSGI_EMPEROR_PROXY=", proxy_attr_docker);
 	json_array_append(env, json_string(env_proxy));
 	free(env_proxy);

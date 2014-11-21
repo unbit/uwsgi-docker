@@ -361,7 +361,7 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
                         socket_fd = bind_to_unix(docker_socket, uwsgi.listen_queue, uwsgi.chmod_socket, 0);
                 }
         if (socket_fd == -1) {
-        	uswgi_error("error binding docker-socket");
+        	uwsgi_error("error binding docker-socket");
         	exit(1);
         }
 	}

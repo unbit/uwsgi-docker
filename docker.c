@@ -12,6 +12,7 @@ static struct uwsgi_docker {
 	int debug;
 	int emperor_required;
 	char *socket;
+	char *vassal_socket_dir;
 } udocker;
 
 static struct uwsgi_option docker_options[] = {
@@ -21,6 +22,7 @@ static struct uwsgi_option docker_options[] = {
 	{"emperor-docker-required", no_argument, 0, "enable Emperor integration with docker", uwsgi_opt_true, &udocker.emperor_required, 0},
 	{"docker-debug", no_argument, 0, "enable debug mode", uwsgi_opt_true, &udocker.debug, 0},
 	{"docker-daemon-socket", required_argument, 0, "set the docker daemon socket path (default: " DOCKER_SOCKET ")", uwsgi_opt_set_str, &udocker.socket, 0},
+	{"docker-socket-dir", required_argument, 0, "set default vassal socket directory", uwsgi_opt_set_str, &udocker.vassal_socket_dir, 0},
 	UWSGI_END_OF_OPTIONS
 };
 
@@ -341,6 +343,13 @@ static void docker_run(struct uwsgi_instance *ui, char **argv) {
 		// if docker-proxy is not specified we place the socket
 		// in the vassals dir
 		char *socket_path = uwsgi_expand_path(ui->name, strlen(ui->name), NULL);
+
+		if (!socket_path && udocker.vassal_socket_dir) {
+			// Instance name is probably not a file.
+			// Let's place socket in vassal_socket_dir
+			socket_path = uwsgi_concat3(udocker.vassal_socket_dir, "/", ui->name);
+		}
+
 		if (!socket_path) {
 			uwsgi_log("[docker] unable to build proxy socket path\n");
 			exit(1);
